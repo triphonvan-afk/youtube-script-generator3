@@ -102,7 +102,7 @@ def get_selected_font_object(style_string, size):
             return ImageFont.truetype(downloaded_path, size)
         except Exception:
                 if st.button("🔍 Source Background From Internet"):
-        if search_query:
+        if search query:
             with st.spinner(f"Connecting to live media indexes to fetch '{search_query}'..."):
                 try:
                     # Clean spaces into commas for the public network engine
