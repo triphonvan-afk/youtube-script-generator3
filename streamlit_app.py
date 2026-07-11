@@ -58,19 +58,17 @@ st.session_state.current_page_idx = page_names.index(chosen_sidebar_page)
 def shift_to_next():
     if st.session_state.current_page_idx < len(page_names) - 1:
         st.session_state.current_page_idx += 1
-        st.rerun()
 
 def shift_to_back():
     if st.session_state.current_page_idx > 0:
         st.session_state.current_page_idx -= 1
-        st.rerun()
 
 # --- FONTS ENGINE MANAGEMENT ---
 @st.cache_data
 def fetch_font_from_web(url, target_filename):
     if not os.path.exists(target_filename):
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
             with urllib.request.urlopen(req) as response, open(target_filename, 'wb') as out_file:
                 out_file.write(response.read())
         except Exception:
@@ -193,12 +191,13 @@ if st.session_state.current_page_idx == 0:
                     source_url = f"https://loremflickr.com{formatted_query}"
                     temp_img_path = "downloaded_bg.jpg"
                     
-                    req = urllib.request.Request(source_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+                    req = urllib.request.Request(source_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
                     with urllib.request.urlopen(req) as response, open(temp_img_path, 'wb') as out_file:
                         out_file.write(response.read())
                         
                     st.session_state.downloaded_web_bg = temp_img_path
                     st.success("🎉 Photo successfully downloaded over public image node!")
+                    st.rerun()
                 except Exception as e:
                     st.error(f"Network Download Blocked: {str(e)}")
                         
@@ -213,19 +212,3 @@ if st.session_state.current_page_idx == 0:
     st.write("### 🖼️ Real-Time Output Canvas Preview")
     thumbnail_img = generate_advanced_thumbnail(
         thumbnail_text, bg_color, text_color, shadow_color, banner_color,
-        # =====================================================================
-# --- STEPPERS NAVIGATION CONTROL RAIL FOOTER ---
-# =====================================================================
-st.write("---")
-col_back, col_middle, col_next = st.columns([1, 4, 1]) # Fixed layout matrix array definitions
-
-# Display Back Button on all pages except page 1
-if st.session_state.current_page_idx > 0:
-    with col_back:
-        st.button("⬅ Back Page", on_click=shift_to_back, use_container_width=True)
-
-# Display Next Button on all pages except the last page
-if st.session_state.current_page_idx < len(page_names) - 1:
-    with col_next:
-        st.button("Next Page ➡", on_click=shift_to_next, use_container_width=True)
-
