@@ -2,7 +2,6 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import google.genai as genai
 import textwrap
-import urllib.request
 import os
 
 # --- APP LAYOUT INITIALIZATION ---
@@ -16,7 +15,7 @@ bg_color = st.sidebar.color_picker("Thumbnail Background Color", "#1E1E2E")
 text_color = st.sidebar.color_picker("Thumbnail Text Color", "#FFCC00")
 
 # Interactive Sliders for Custom Text Layouts
-font_size = st.sidebar.slider("Font Size", min_value=40, max_value=200, value=120, step=5)
+font_size = st.sidebar.slider("Font Size", min_value=40, max_value=200, value=110, step=5)
 line_width = st.sidebar.slider("Characters Per Line (Wrap)", min_value=8, max_value=25, value=12, step=1)
 
 # --- AUTO-LOAD SECURE API KEY ---
@@ -31,18 +30,24 @@ else:
 topic = st.text_input("What is your YouTube Short about?", placeholder="e.g., 3 Hidden Features of iPhones No One Uses")
 hook_style = st.selectbox("Script Tone/Hook Style", ["Dramatic & Suspenseful", "Energetic & Fast-Paced", "Educational & Casual"])
 
-# --- CORE LOGIC: UNIVERSAL CLOUD FONT ENGINE ---
-@st.cache_data
-def get_cloud_font():
-    """Downloads a heavy web-safe YouTube headline font if not present locally"""
-    font_path = "Anton-Regular.ttf"
-    if not os.path.exists(font_path):
-        url = "https://github.com"
+# --- CORE LOGIC: COMPATIBLE SYSTEM FONT SELECTOR ---
+def load_system_font(size):
+    """Checks for standard, high-legibility bold system fonts across Linux/Windows/Mac layers"""
+    font_options = [
+        "arialbd.ttf",       # Windows/Mac Bold Arial
+        "LiberationSans-Bold.ttf", # Standard Linux Server Bold Sans (Streamlit Native)
+        "DejaVuSans-Bold.ttf", # Linux Fallback alternative
+        "impact.ttf"         # Standard Impact Font
+    ]
+    
+    for font_name in font_options:
         try:
-            urllib.request.urlretrieve(url, font_path)
-        except Exception:
-            return None
-    return font_path
+            return ImageFont.truetype(font_name, size)
+        except IOError:
+            continue
+            
+    # Ultimate safe baseline if everything else fails
+    return ImageFont.load_default()
 
 def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selected_wrap_width):
     # 1. Initialize Canvas (1280x720 standard landscape layout)
@@ -54,12 +59,8 @@ def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selecte
         fade_factor = int((y / 720) * 110) 
         draw.line([(0, y), (1280, y)], fill=(0, 0, 0, fade_factor))
         
-    # 3. Load the Dynamic Cloud Font Asset
-    font_file = get_cloud_font()
-    if font_file:
-        font = ImageFont.truetype(font_file, selected_font_size)
-    else:
-        font = ImageFont.load_default()
+    # 3. Load the cross-platform bold layout font safely
+    font = load_system_font(selected_font_size)
 
     # Wrap the text using the slider value chosen by the user
     wrapped_lines = textwrap.wrap(title_text.upper(), width=selected_wrap_width)
