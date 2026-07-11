@@ -211,4 +211,4 @@ if st.session_state.current_page_idx == 0:
     # REAL-TIME RENDER: Generates canvas immediately upon UI changes
     st.write("### 🖼️ Real-Time Output Canvas Preview")
     thumbnail_img = generate_advanced_thumbnail(
-        thumbnail_text, bg_color, text_color, shadow_color, banner_color,
+        thumbnail_text, bg_color, text_color, shadow_color, banner_color)
