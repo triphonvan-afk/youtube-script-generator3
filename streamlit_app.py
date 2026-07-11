@@ -70,7 +70,7 @@ def shift_to_back():
 def fetch_font_from_web(url, target_filename):
     if not os.path.exists(target_filename):
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
             with urllib.request.urlopen(req) as response, open(target_filename, 'wb') as out_file:
                 out_file.write(response.read())
         except Exception:
@@ -101,40 +101,59 @@ def get_selected_font_object(style_string, size):
         try:
             return ImageFont.truetype(downloaded_path, size)
         except Exception:
-                if st.button("🔍 Source Background From Internet"):
-        if search query:
-            with st.spinner(f"Connecting to live media indexes to fetch '{search_query}'..."):
-                try:
-                    # Clean spaces into commas for the public network engine
-                    formatted_query = search_query.replace(" ", ",")
-                    
-                    # Direct unauthenticated 1280x720 video canvas landscape route
-                    source_url = f"https://loremflickr.com{formatted_query}"
-                    temp_img_path = "downloaded_bg.jpg"
-                    
-                    # Stream background pixels down into the local cache safely
-                    req = urllib.request.Request(source_url, headers={'User-Agent': 'Mozilla/5.0'})
-                    with urllib.request.urlopen(req) as response, open(temp_img_path, 'wb') as out_file:
-                        out_file.write(response.read())
-                        
-                    st.session_state.downloaded_web_bg = temp_img_path
-                    st.success("🎉 Photo successfully downloaded over public image node!")
-                except Exception as e:
-                    st.error(f"Network Download Blocked: {str(e)}")
+            pass
+    return ImageFont.load_default()
 
+# --- PREMIUM THUMBNAIL RENDER ENGINE ---
+def generate_advanced_thumbnail(title_text, bg_hex, txt_hex, shd_hex, bnr_hex, selected_size, selected_wrap, web_bg_file, y_pos, bnr_active, chosen_font_style):
+    if web_bg_file and os.path.exists(web_bg_file):
+        try:
+            img = Image.open(web_bg_file).convert("RGB")
+            img = img.resize((1280, 720), Image.Resampling.LANCZOS)
+        except Exception:
+            img = Image.new("RGB", (1280, 720), color=bg_hex)
+    else:
+        img = Image.new("RGB", (1280, 720), color=bg_hex)
+        
+    draw = ImageDraw.Draw(img)
+    
+    # Add Dark Vignette Layer for Contrast
+    for y in range(720):
+        fade_factor = int((y / 720) * 130) 
+        draw.line([(0, y), (1280, y)], fill=(0, 0, 0, fade_factor))
+        
+    font = get_selected_font_object(chosen_font_style, selected_size)
+    wrapped_lines = textwrap.wrap(title_text.upper(), width=selected_wrap)
+    line_height = selected_size + 15
+    total_text_height = len(wrapped_lines) * line_height
+    start_y = y_pos - (total_text_height // 2)
+    
+    if font.getname() == 'ImageFont':
+        for line in wrapped_lines:
+            draw.text((100, start_y), line, fill=txt_hex)
+            start_y += 30
+        return img
+        
+    if bnr_active:
+        banner_padding_v = 30
         draw.rectangle([(0, max(0, start_y - banner_padding_v)), (1280, min(720, start_y + total_text_height + banner_padding_v - 10))], fill=bnr_hex)
+        
     current_y = start_y
     for line in wrapped_lines:
         left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
         text_width = right - left
         x_position = (1280 - text_width) // 2
+        
+        # 3D Drop Shadow
         shadow_offset = max(3, int(selected_size * 0.08))
         for sx in range(-shadow_offset, shadow_offset + 1):
             for sy in range(-shadow_offset, shadow_offset + 1):
                 if abs(sx) > shadow_offset - 2 or abs(sy) > shadow_offset - 2:
                     draw.text((x_position + sx, current_y + sy), line, fill=shd_hex, font=font)
+                    
         draw.text((x_position, current_y), line, fill=txt_hex, font=font)
         current_y += line_height
+        
     draw.rectangle([(0, 705), (1280, 720)], fill="#FF0000") 
     return img
 
@@ -170,24 +189,18 @@ if st.session_state.current_page_idx == 0:
         if search_query:
             with st.spinner(f"Connecting to live media indexes to fetch '{search_query}'..."):
                 try:
-                    formatted_query = search_query.replace(" ", "-")
-                    source_url = f"https://unsplash.com?{formatted_query}"
+                    formatted_query = search_query.replace(" ", ",")
+                    source_url = f"https://loremflickr.com{formatted_query}"
                     temp_img_path = "downloaded_bg.jpg"
-                    req = urllib.request.Request(source_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    
+                    req = urllib.request.Request(source_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
                     with urllib.request.urlopen(req) as response, open(temp_img_path, 'wb') as out_file:
                         out_file.write(response.read())
+                        
                     st.session_state.downloaded_web_bg = temp_img_path
-                    st.success("🎉 Photo successfully downloaded over open web socket!")
-                except Exception:
-                    try:
-                        default_url = "https://unsplash.com"
-                        req = urllib.request.Request(default_url, headers={'User-Agent': 'Mozilla/5.0'})
-                        with urllib.request.urlopen(req) as response, open("downloaded_bg.jpg", 'wb') as out_file:
-                            out_file.write(response.read())
-                        st.session_state.downloaded_web_bg = "downloaded_bg.jpg"
-                        st.info("Loaded high-quality abstract vector texture background.")
-                    except Exception as e:
-                        st.error(f"Network Timeout Error: {str(e)}")
+                    st.success("🎉 Photo successfully downloaded over public image node!")
+                except Exception as e:
+                    st.error(f"Network Download Blocked: {str(e)}")
                         
     if st.session_state.downloaded_web_bg:
         if st.button("❌ Wipe Internet Image (Return to Fallback Color)"):
@@ -196,3 +209,7 @@ if st.session_state.current_page_idx == 0:
             
     thumbnail_text = st.text_input("Type Your Thumbnail Headline Title Text Here:", value="SECRET TRICKS")
     
+    # REAL-TIME RENDER: Generates canvas immediately upon UI changes
+    st.write("### 🖼️ Real-Time Output Canvas Preview")
+    thumbnail_img = generate_advanced_thumbnail(
+        thumbnail_text, bg_color, text_color, shadow_color, banner_color,
