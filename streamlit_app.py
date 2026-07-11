@@ -213,3 +213,19 @@ if st.session_state.current_page_idx == 0:
     st.write("### 🖼️ Real-Time Output Canvas Preview")
     thumbnail_img = generate_advanced_thumbnail(
         thumbnail_text, bg_color, text_color, shadow_color, banner_color,
+        # =====================================================================
+# --- STEPPERS NAVIGATION CONTROL RAIL FOOTER ---
+# =====================================================================
+st.write("---")
+col_back, col_middle, col_next = st.columns([1, 4, 1]) # Fixed layout matrix array definitions
+
+# Display Back Button on all pages except page 1
+if st.session_state.current_page_idx > 0:
+    with col_back:
+        st.button("⬅ Back Page", on_click=shift_to_back, use_container_width=True)
+
+# Display Next Button on all pages except the last page
+if st.session_state.current_page_idx < len(page_names) - 1:
+    with col_next:
+        st.button("Next Page ➡", on_click=shift_to_next, use_container_width=True)
+
