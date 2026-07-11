@@ -7,11 +7,16 @@ import os
 # --- APP LAYOUT INITIALIZATION ---
 st.set_page_config(page_title="Shorts Thumbnail Studio", layout="wide")
 st.title("🎨 Shorts Thumbnail Studio")
-st.caption("Design ultra-high impact YouTube landscape templates locally with zero API limits.")
+st.caption("Design ultra-high impact YouTube landscape templates locally with custom background images.")
 
 # --- SIDEBAR: DESIGN CONFIGURATION ---
 st.sidebar.header("🎨 Styling Options")
-bg_color = st.sidebar.color_picker("Thumbnail Background Color", "#1E1E2E")
+
+# NEW FEATURE: Image Uploader
+uploaded_bg = st.sidebar.file_uploader("Upload Background Image (Optional)", type=["png", "jpg", "jpeg"])
+
+# Fallback color picker if no image is uploaded
+bg_color = st.sidebar.color_picker("Fallback Background Color", "#1E1E2E")
 text_color = st.sidebar.color_picker("Thumbnail Text Color", "#FFCC00")
 
 # --- EXTENDED MASSIVE FONT SLIDERS ---
@@ -19,7 +24,6 @@ font_size = st.sidebar.slider("Font Size", min_value=40, max_value=300, value=18
 line_width = st.sidebar.slider("Characters Per Line (Wrap)", min_value=5, max_value=25, value=10, step=1)
 
 # --- MAIN FORM INPUT ---
-# This input prints directly to the canvas in real-time
 thumbnail_text = st.text_input(
     "Type Your Thumbnail Headline Text Here:", 
     value="3 SECRET TRICKS",
@@ -42,9 +46,16 @@ def load_heavy_font():
     return font_path
 
 # --- CORE LOGIC: MASSIVE TYPOGRAPHY THUMBNAIL GENERATION ---
-def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selected_wrap_width):
+def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selected_wrap_width, bg_image_file):
     # 1. Initialize Canvas (1280x720 standard landscape layout)
-    img = Image.new("RGB", (1280, 720), color=bg_hex)
+    if bg_image_file is not None:
+        # Open the uploaded image and force reshape it to standard 1280x720 video layout
+        img = Image.open(bg_image_file).convert("RGB")
+        img = img.resize((1280, 720), Image.Resampling.LANCZOS)
+    else:
+        # Fall back to solid color if uploader container is empty
+        img = Image.new("RGB", (1280, 720), color=bg_hex)
+        
     draw = ImageDraw.Draw(img)
     
     # 2. Add Aggressive Black Gradient vignette for extreme typography pop
@@ -52,7 +63,7 @@ def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selecte
         fade_factor = int((y / 720) * 140) 
         draw.line([(0, y), (1280, y)], fill=(0, 0, 0, fade_factor))
         
-    # 3. Load the ultra-heavy block font asset natively
+    # 3. Load the graduation block font asset natively
     font_file = load_heavy_font()
     if font_file:
         try:
@@ -104,8 +115,8 @@ if st.button("🚀 Render Custom Canvas Layout", type="primary"):
         st.warning("Please type your banner title first!")
     else:
         with st.spinner("Processing raster layouts and anchoring layers..."):
-            # Output mega-scale canvas configurations
-            thumbnail_img = generate_thumbnail(thumbnail_text, bg_color, text_color, font_size, line_width)
+            # Output mega-scale canvas configurations (including the uploaded image file)
+            thumbnail_img = generate_thumbnail(thumbnail_text, bg_color, text_color, font_size, line_width, uploaded_bg)
             
             # Show canvas center view
             st.image(thumbnail_img, use_container_width=True)
