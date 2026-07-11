@@ -9,11 +9,20 @@ st.set_page_config(page_title="Shorts Script & Thumbnail Gen", layout="wide")
 st.title("🎬 Shorts Script & Thumbnail Studio")
 st.caption("Generate engaging multi-scene vertical scripts and a matching YouTube thumbnail.")
 
-# --- SIDEBAR: CONFIGURATION & CREDENTIALS ---
-st.sidebar.header("🔑 Setup & Styling")
-api_key = st.sidebar.text_input("Google Gemini API Key", type="password")
+# --- SIDEBAR: DESIGN CONFIGURATION ---
+st.sidebar.header("🎨 Styling Options")
 bg_color = st.sidebar.color_picker("Thumbnail Background Color", "#1E1E2E")
 text_color = st.sidebar.color_picker("Thumbnail Text Color", "#FFCC00")
+
+# --- AUTO-LOAD SECURE API KEY ---
+# Look for the hidden cloud secret first; fall back to an empty string if missing
+api_key = st.secrets.get("GEMINI_API_KEY", "")
+
+# Show a secure status indicator in the sidebar
+if api_key:
+    st.sidebar.success("🔒 Gemini AI Connected Automatically!")
+else:
+    st.sidebar.warning("⚠️ No Key Found! Configure Secrets in Streamlit Settings.")
 
 # --- MAIN FORM INPUT ---
 topic = st.text_input("What is your YouTube Short about?", placeholder="e.g., 3 Hidden Features of iPhones No One Uses")
@@ -60,7 +69,7 @@ def generate_thumbnail(title_text, bg_hex, text_hex):
 # --- CORE LOGIC: AI SCRIPT GENERATION ---
 def fetch_ai_script(prompt_topic, tone, key):
     if not key:
-        return "Please input a valid Google API Key in the left sidebar configuration panel."
+        return "Please input a valid Google API Key in your Streamlit Cloud Secrets dashboard panel."
         
     try:
         client = genai.Client(api_key=key)
@@ -77,7 +86,7 @@ if st.button("🚀 Generate Content Assets", type="primary"):
     if not topic:
         st.warning("Please type a topic prompt first!")
     elif not api_key:
-        st.error("Missing API Key! Please configure the sidebar settings.")
+        st.error("Missing API Key! Please save your key in the Streamlit Cloud Secrets dashboard.")
     else:
         with st.spinner("AI is brainstorming scripts and rendering layouts..."):
             raw_script_output = fetch_ai_script(topic, hook_style, api_key)
