@@ -2,6 +2,7 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import google.genai as genai
 import textwrap
+import urllib.request
 import os
 
 # --- APP LAYOUT INITIALIZATION ---
@@ -13,6 +14,10 @@ st.caption("Generate engaging multi-scene vertical scripts and a matching YouTub
 st.sidebar.header("🎨 Styling Options")
 bg_color = st.sidebar.color_picker("Thumbnail Background Color", "#1E1E2E")
 text_color = st.sidebar.color_picker("Thumbnail Text Color", "#FFCC00")
+
+# Interactive Sliders for Custom Text Layouts
+font_size = st.sidebar.slider("Font Size", min_value=40, max_value=200, value=120, step=5)
+line_width = st.sidebar.slider("Characters Per Line (Wrap)", min_value=8, max_value=25, value=12, step=1)
 
 # --- AUTO-LOAD SECURE API KEY ---
 api_key = st.secrets.get("GEMINI_API_KEY", "")
@@ -26,34 +31,43 @@ else:
 topic = st.text_input("What is your YouTube Short about?", placeholder="e.g., 3 Hidden Features of iPhones No One Uses")
 hook_style = st.selectbox("Script Tone/Hook Style", ["Dramatic & Suspenseful", "Energetic & Fast-Paced", "Educational & Casual"])
 
-# --- CORE LOGIC: MASSIVE TYPOGRAPHY THUMBNAIL GENERATION ---
-def generate_thumbnail(title_text, bg_hex, text_hex):
+# --- CORE LOGIC: UNIVERSAL CLOUD FONT ENGINE ---
+@st.cache_data
+def get_cloud_font():
+    """Downloads a heavy web-safe YouTube headline font if not present locally"""
+    font_path = "Anton-Regular.ttf"
+    if not os.path.exists(font_path):
+        url = "https://github.com"
+        try:
+            urllib.request.urlretrieve(url, font_path)
+        except Exception:
+            return None
+    return font_path
+
+def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selected_wrap_width):
     # 1. Initialize Canvas (1280x720 standard landscape layout)
     img = Image.new("RGB", (1280, 720), color=bg_hex)
     draw = ImageDraw.Draw(img)
     
     # 2. Add Linear Gradient Overlap for Contrast Depth
     for y in range(720):
-        fade_factor = int((y / 720) * 95) 
+        fade_factor = int((y / 720) * 110) 
         draw.line([(0, y), (1280, y)], fill=(0, 0, 0, fade_factor))
         
-    # 3. Load Heavy High-Impact Fonts at a Massive Size (130px)
-    font_size = 130
-    try:
-        font = ImageFont.truetype("impact.ttf", font_size)
-    except IOError:
-        try:
-            font = ImageFont.truetype("arialbd.ttf", font_size)
-        except IOError:
-            font = ImageFont.load_default()
+    # 3. Load the Dynamic Cloud Font Asset
+    font_file = get_cloud_font()
+    if font_file:
+        font = ImageFont.truetype(font_file, selected_font_size)
+    else:
+        font = ImageFont.load_default()
 
-    # Wrap the text tighter (width=12) so fewer big words fit per line
-    wrapped_lines = textwrap.wrap(title_text.upper(), width=12)
+    # Wrap the text using the slider value chosen by the user
+    wrapped_lines = textwrap.wrap(title_text.upper(), width=selected_wrap_width)
     
-    # 4. Balanced Center Calculation Geometry for Large Fonts
-    line_height = font_size + 15
+    # 4. Balanced Center Calculation Geometry
+    line_height = selected_font_size + 20
     total_text_height = len(wrapped_lines) * line_height
-    y_offset = (720 - total_text_height) // 2 - 20
+    y_offset = (720 - total_text_height) // 2
     
     for line in wrapped_lines:
         # Pinpoint visual center coordinates
@@ -61,8 +75,8 @@ def generate_thumbnail(title_text, bg_hex, text_hex):
         text_width = right - left
         x_position = (1280 - text_width) // 2
         
-        # 5. Heavy 8-Pixel Drop-Shadow for Instant Text Legibility
-        shadow_offset = 8
+        # 5. Heavy Scaled Drop-Shadow proportional to the font size
+        shadow_offset = max(3, int(selected_font_size * 0.07))
         for sx in [-shadow_offset, shadow_offset]:
             for sy in [-shadow_offset, shadow_offset]:
                 draw.text((x_position + sx, y_offset + sy), line, fill="#000000", font=font)
@@ -109,7 +123,8 @@ if st.button("🚀 Generate Content Assets", type="primary"):
                 st.subheader("🖼️ Generated Video Thumbnail")
                 clean_title = topic[:40] + "..." if len(topic) > 40 else topic
                 
-                thumbnail_img = generate_thumbnail(clean_title, bg_color, text_color)
+                # Pass sliders variables down to engine
+                thumbnail_img = generate_thumbnail(clean_title, bg_color, text_color, font_size, line_width)
                 st.image(thumbnail_img, use_container_width=True)
                 
                 thumbnail_img.save("temp_thumb.png")
