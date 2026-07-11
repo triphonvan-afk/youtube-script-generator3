@@ -14,11 +14,13 @@ st.sidebar.header("🎨 Styling Options")
 bg_color = st.sidebar.color_picker("Thumbnail Background Color", "#1E1E2E")
 text_color = st.sidebar.color_picker("Thumbnail Text Color", "#FFCC00")
 
+# Interactive Sliders for Custom Text Layouts
+font_size = st.sidebar.slider("Font Size", min_value=40, max_value=200, value=120, step=5)
+line_width = st.sidebar.slider("Characters Per Line (Wrap)", min_value=8, max_value=25, value=12, step=1)
+
 # --- AUTO-LOAD SECURE API KEY ---
-# Look for the hidden cloud secret first; fall back to an empty string if missing
 api_key = st.secrets.get("GEMINI_API_KEY", "")
 
-# Show a secure status indicator in the sidebar
 if api_key:
     st.sidebar.success("🔒 Gemini AI Connected Automatically!")
 else:
@@ -28,42 +30,52 @@ else:
 topic = st.text_input("What is your YouTube Short about?", placeholder="e.g., 3 Hidden Features of iPhones No One Uses")
 hook_style = st.selectbox("Script Tone/Hook Style", ["Dramatic & Suspenseful", "Energetic & Fast-Paced", "Educational & Casual"])
 
-# --- CORE LOGIC: UPGRADED THUMBNAIL GENERATION ---
-def generate_thumbnail(title_text, bg_hex, text_hex):
+# --- CORE LOGIC: DYNAMIC TYPOGRAPHY THUMBNAIL GENERATION ---
+def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selected_wrap_width):
+    # 1. Initialize Canvas (1280x720 standard landscape layout)
     img = Image.new("RGB", (1280, 720), color=bg_hex)
     draw = ImageDraw.Draw(img)
     
-    # Advanced Linear Gradient Overlap
+    # 2. Add Linear Gradient Overlap for Contrast Depth
     for y in range(720):
-        fade_factor = int((y / 720) * 85) 
+        fade_factor = int((y / 720) * 95) 
         draw.line([(0, y), (1280, y)], fill=(0, 0, 0, fade_factor))
         
+    # 3. Load Heavy High-Impact Fonts using the selected custom size
     try:
-        font = ImageFont.truetype("impact.ttf", 95)
+        font = ImageFont.truetype("impact.ttf", selected_font_size)
     except IOError:
         try:
-            font = ImageFont.truetype("arialbd.ttf", 95)
+            font = ImageFont.truetype("arialbd.ttf", selected_font_size)
         except IOError:
             font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(title_text.upper(), width=16)
-    y_offset = 360 - (len(wrapped_lines) * 55)
+    # Wrap the text using the slider value chosen by the user
+    wrapped_lines = textwrap.wrap(title_text.upper(), width=selected_wrap_width)
+    
+    # 4. Balanced Center Calculation Geometry
+    line_height = selected_font_size + 15
+    total_text_height = len(wrapped_lines) * line_height
+    y_offset = (720 - total_text_height) // 2 - 20
     
     for line in wrapped_lines:
+        # Pinpoint visual center coordinates
         left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
         text_width = right - left
         x_position = (1280 - text_width) // 2
         
-        # Heavy Cinematic Drop-Shadow
-        shadow_offset = 6
+        # 5. Scaled Drop-Shadow proportional to the font size
+        shadow_offset = max(2, int(selected_font_size * 0.06))
         for sx in [-shadow_offset, shadow_offset]:
             for sy in [-shadow_offset, shadow_offset]:
                 draw.text((x_position + sx, y_offset + sy), line, fill="#000000", font=font)
                 
+        # 6. Primary Text Layer Stamp
         draw.text((x_position, y_offset), line, fill=text_hex, font=font)
-        y_offset += 115
+        y_offset += line_height
         
-    draw.rectangle([(0, 710), (1280, 720)], fill="#FF0000") 
+    # 7. Bright Bottom Accent Strip
+    draw.rectangle([(0, 705), (1280, 720)], fill="#FF0000") 
     return img
 
 # --- CORE LOGIC: AI SCRIPT GENERATION ---
@@ -100,7 +112,8 @@ if st.button("🚀 Generate Content Assets", type="primary"):
                 st.subheader("🖼️ Generated Video Thumbnail")
                 clean_title = topic[:40] + "..." if len(topic) > 40 else topic
                 
-                thumbnail_img = generate_thumbnail(clean_title, bg_color, text_color)
+                # Pass sliders variables down to engine
+                thumbnail_img = generate_thumbnail(clean_title, bg_color, text_color, font_size, line_width)
                 st.image(thumbnail_img, use_container_width=True)
                 
                 thumbnail_img.save("temp_thumb.png")
