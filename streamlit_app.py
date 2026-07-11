@@ -2,103 +2,70 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 import urllib.request
-import json
+import datetime
+import pandas as pd
+import numpy as np
 import os
 
-# --- APP INITIALIZATION & CUSTOM SYSTEM THEME SWITCHER ---
-# Feature: Select interface aesthetic accents before launching structural assets
+# --- APP VIEWPORT SETUP ---
+st.set_page_config(page_title="Ultimate Content Studio", layout="wide")
+
+# --- INITIALIZE GLOBAL CACHE VARIABLES ---
+if "current_page_idx" not in st.session_state:
+    st.session_state.current_page_idx = 0
 if "studio_theme" not in st.session_state:
     st.session_state.studio_theme = "Amethyst Dark"
+if "downloaded_web_bg" not in st.session_state:
+    st.session_state.downloaded_web_bg = None
 
-st.sidebar.header("⚙️ Core Platform Environment")
+# --- SIDEBAR: INTERFACE SYSTEM THEME SWITCHER ---
+st.sidebar.header("⚙️ Studio Core Config")
 selected_ui_theme = st.sidebar.selectbox(
-    "Application Interface Accent Theme", 
+    "Application Accent Theme", 
     ["Amethyst Dark", "Sapphire Neon"], 
     index=0 if st.session_state.studio_theme == "Amethyst Dark" else 1
 )
 st.session_state.studio_theme = selected_ui_theme
 
-# Render style attributes dynamically based on session status
+# Apply dynamic CSS buttons styling based on theme choice
 if st.session_state.studio_theme == "Sapphire Neon":
     st.markdown("<style>.stButton>button{background-color: #00E5FF !important; color:black !important; font-weight:bold;}</style>", unsafe_allow_html=True)
 else:
     st.markdown("<style>.stButton>button{background-color: #9D4EDD !important; color:white !important; font-weight:bold;}</style>", unsafe_allow_html=True)
 
-st.title("🎬 Multi-Theme Thumbnail Production Engine")
-st.caption("Locally render, edit, and export YouTube landscape templates with live internet sourcing assets.")
+# --- SIDEBAR: INTEGRATED MULTI-PAGE MENU NAVIGATION ---
+page_names = [
+    "🎬 Main Studio Canvas",
+    "🎥 Production Scheduler",
+    "📊 Analytics Tracker",
+    "🔥 Viral Trend Finder",
+    "⚙️ Studio Settings"
+]
 
-# --- SIDEBAR: DESIGN CONFIGURATIONS ---
-st.sidebar.header("🎨 Canvas Settings")
-bg_color = st.sidebar.color_picker("Fallback Canvas Color", "#1E1E2E")
-text_color = st.sidebar.color_picker("Main Headline Typography Color", "#FFCC00")
-shadow_color = st.sidebar.color_picker("3D Outline Drop-Shadow Color", "#000000")
-
-st.sidebar.subheader("📐 Typography Constraints")
-font_choice = st.sidebar.selectbox(
-    "Headline Font Profile Asset", 
-    ["Ultra-Heavy Block (Anton)", "Sleek Cyberpunk", "Classic Geometric Bold", "Retro Serif Bold", "Elegant Script Modern", "Futuristic Tech Accent"]
+st.sidebar.subheader("📱 Navigation Panel Menu")
+# Sync sidebar selector with our Next/Back button indices
+chosen_sidebar_page = st.sidebar.radio(
+    "Go To Workspace Tab:", 
+    page_names, 
+    index=st.session_state.current_page_idx,
+    key="sidebar_navigation_radio_key"
 )
-font_size = st.sidebar.slider("Font Vector Size Scale", min_value=40, max_value=300, value=150, step=5)
-line_width = st.sidebar.slider("Characters Per Line (Wrap)", min_value=5, max_value=25, value=11, step=1)
-text_y_position = st.sidebar.slider("Vertical Alignment Offset", min_value=50, max_value=650, value=360, step=10)
 
-st.sidebar.subheader("🏷️ Background Solid Fill Banners")
-use_banner = st.sidebar.checkbox("Enable Solid Text Backdrop Accent Banner", value=False)
-banner_color = st.sidebar.color_picker("Backdrop Banner Color", "#000000")
+# Update state matching menu clicks
+st.session_state.current_page_idx = page_names.index(chosen_sidebar_page)
 
-# --- INTERNET ACCESS LAYER: SOURCE STOCK PHOTO BACKGROUNDS LIVE ---
-st.subheader("🌐 Live Internet Background Core")
-search_query = st.text_input("Type an internet keyword search prompt to load a background live:", value="", placeholder="e.g., cyberpunk city, luxury car, gaming setup")
-
-# Maintain search memory throughout rendering execution cycles
-if "downloaded_web_bg" not in st.session_state:
-    st.session_state.downloaded_web_bg = None
-
-if st.button("🔍 Source Background From Internet"):
-    if search_query:
-        with st.spinner(f"Connecting to live media indexes to fetch '{search_query}' photo structures..."):
-            try:
-                # Target unassigned public endpoint networks to retrieve source imagery safely
-                api_url = f"https://unsplash.com"
-                formatted_query = search_query.replace(" ", "-")
-                fallback_source_url = f"https://unsplash.com?{formatted_query}"
-                
-                # Attempt structural stream ingestion directly into cache
-                temp_img_path = "downloaded_bg.jpg"
-                req = urllib.request.Request(fallback_source_url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req) as response, open(temp_img_path, 'wb') as out_file:
-                    out_file.write(response.read())
-                
-                st.session_state.downloaded_web_bg = temp_img_path
-                st.success("🎉 Photo successfully downloaded over open web socket! Ready to layer graphics.")
-            except Exception:
-                # Standard gradient endpoint recovery fallback if specific search routes time out
-                try:
-                    default_url = "https://unsplash.com"
-                    req = urllib.request.Request(default_url, headers={'User-Agent': 'Mozilla/5.0'})
-                    with urllib.request.urlopen(req) as response, open("downloaded_bg.jpg", 'wb') as out_file:
-                        out_file.write(response.read())
-                    st.session_state.downloaded_web_bg = "downloaded_bg.jpg"
-                    st.info("Loaded high-quality abstract vector texture background over network link.")
-                except Exception as e:
-                    st.error(f"Network Connection Timeout: Verify server firewall protocols. Error: {str(e)}")
-
-# Add manual asset clearing toggle buttons
-if st.session_state.downloaded_web_bg:
-    if st.button("❌ Wipe Internet Image (Return to Fallback Color)"):
-        st.session_state.downloaded_web_bg = None
+# --- HELPER LOGIC FOR TEXT BUTTON NAVIGATION ---
+def shift_to_next():
+    if st.session_state.current_page_idx < len(page_names) - 1:
+        st.session_state.current_page_idx += 1
         st.rerun()
 
-st.write("---")
+def shift_to_back():
+    if st.session_state.current_page_idx > 0:
+        st.session_state.current_page_idx -= 1
+        st.rerun()
 
-# --- MAIN FORM INPUT ---
-thumbnail_text = st.text_input(
-    "Type Your Thumbnail Headline Title Text Here:", 
-    value="SECRET TRICKS",
-    placeholder="e.g., STOP TYPING LIKE THIS!"
-)
-
-# --- CORE LOGIC: MULTI-FONT SOURCING MANAGERS ---
+# --- FONTS ENGINE MANAGEMENT ---
 @st.cache_data
 def fetch_font_from_web(url, target_filename):
     if not os.path.exists(target_filename):
@@ -127,10 +94,8 @@ def get_selected_font_object(style_string, size):
         "Elegant Script Modern": "Satisfy.ttf",
         "Futuristic Tech Accent": "Orbitron.ttf"
     }
-    
     url = font_urls[style_string]
     filename = file_names[style_string]
-    
     downloaded_path = fetch_font_from_web(url, filename)
     if downloaded_path and os.path.exists(downloaded_path):
         try:
@@ -139,65 +104,100 @@ def get_selected_font_object(style_string, size):
             pass
     return ImageFont.load_default()
 
-# --- CORE LOGIC: PREMIUM THUMBNAIL LAYOUT ENGINE ---
+# --- PREMIUM THUMBNAIL RENDER ENGINE ---
 def generate_advanced_thumbnail(title_text, bg_hex, txt_hex, shd_hex, bnr_hex, selected_size, selected_wrap, web_bg_file, y_pos, bnr_active, chosen_font_style):
     if web_bg_file and os.path.exists(web_bg_file):
         img = Image.open(web_bg_file).convert("RGB")
         img = img.resize((1280, 720), Image.Resampling.LANCZOS)
     else:
         img = Image.new("RGB", (1280, 720), color=bg_hex)
-        
     draw = ImageDraw.Draw(img)
-    
-    # Cinematic Gradient Vignette Overlap
     for y in range(720):
         fade_factor = int((y / 720) * 130) 
         draw.line([(0, y), (1280, y)], fill=(0, 0, 0, fade_factor))
-        
     font = get_selected_font_object(chosen_font_style, selected_size)
     wrapped_lines = textwrap.wrap(title_text.upper(), width=selected_wrap)
-    
     line_height = selected_size + 15
     total_text_height = len(wrapped_lines) * line_height
     start_y = y_pos - (total_text_height // 2)
-    
     if font.getname() == 'ImageFont':
         for line in wrapped_lines:
             draw.text((100, start_y), line, fill=txt_hex)
             start_y += 30
         return img
-
     if bnr_active:
         banner_padding_v = 30
         draw.rectangle([(0, max(0, start_y - banner_padding_v)), (1280, min(720, start_y + total_text_height + banner_padding_v - 10))], fill=bnr_hex)
-
     current_y = start_y
     for line in wrapped_lines:
         left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
         text_width = right - left
         x_position = (1280 - text_width) // 2
-        
-        # Heavy 3D Drop Shadow
         shadow_offset = max(3, int(selected_size * 0.08))
         for sx in range(-shadow_offset, shadow_offset + 1):
             for sy in range(-shadow_offset, shadow_offset + 1):
                 if abs(sx) > shadow_offset - 2 or abs(sy) > shadow_offset - 2:
                     draw.text((x_position + sx, current_y + sy), line, fill=shd_hex, font=font)
-                
         draw.text((x_position, current_y), line, fill=txt_hex, font=font)
         current_y += line_height
-        
     draw.rectangle([(0, 705), (1280, 720)], fill="#FF0000") 
     return img
 
-# --- EXECUTION RENDER RUNNER ---
-if st.button("🚀 Render Custom Studio Layout Canvas", type="primary"):
-    if not thumbnail_text:
-        st.warning("Please type your title text configuration headers first!")
-    else:
-        with st.spinner("Processing raster layouts and anchoring layers..."):
-            thumbnail_img = generate_advanced_thumbnail(
-                thumbnail_text, bg_color, text_color, shadow_color, banner_color,
-                font_size, line_width, st.session_state.downloaded_web_bg, text_y_position, use_banner, font_choice
-            )
+
+# =====================================================================
+# --- RENDER LOGIC WORKSPACE SWITCH DEPOT ---
+# =====================================================================
+
+# --- WORKSPACE 1: MAIN DESIGN CANVAS STUDIO ---
+if st.session_state.current_page_idx == 0:
+    st.title("🎨 Pro Short-Form Thumbnail Studio")
+    st.caption("Design advanced high-contrast image layouts locally with real-time vector adjustments.")
+    
+    st.sidebar.subheader("🎨 Canvas Controls")
+    bg_color = st.sidebar.color_picker("Fallback Canvas Color", "#1E1E2E")
+    text_color = st.sidebar.color_picker("Headline Text Color", "#FFCC00")
+    shadow_color = st.sidebar.color_picker("3D Outline Drop-Shadow Color", "#000000")
+    
+    st.sidebar.subheader("📐 Custom Formatting Adjustments")
+    font_choice = st.sidebar.selectbox("Headline Font Style Asset", ["Ultra-Heavy Block (Anton)", "Sleek Cyberpunk", "Classic Geometric Bold", "Retro Serif Bold", "Elegant Script Modern", "Futuristic Tech Accent"])
+    font_size = st.sidebar.slider("Font Vector Size Scale", min_value=40, max_value=300, value=150, step=5)
+    line_width = st.sidebar.slider("Characters Per Line (Wrap)", min_value=5, max_value=25, value=11, step=1)
+    text_y_position = st.sidebar.slider("Vertical Alignment Offset", min_value=50, max_value=650, value=360, step=10)
+    
+    st.sidebar.subheader("🏷️ Banner Layer Accents")
+    use_banner = st.sidebar.checkbox("Enable Solid Text Backdrop Accent Banner", value=False)
+    banner_color = st.sidebar.color_picker("Backdrop Banner Color", "#000000")
+    
+    st.subheader("🌐 Live Internet Background Sourcing Core")
+    search_query = st.text_input("Type an internet keyword search prompt to load a background live:", value="", placeholder="e.g., gaming setup, space galaxy, drift car")
+    
+    if st.button("🔍 Source Background From Internet"):
+        if search_query:
+            with st.spinner(f"Connecting to live media indexes to fetch '{search_query}'..."):
+                try:
+                    formatted_query = search_query.replace(" ", "-")
+                    source_url = f"https://unsplash.com?{formatted_query}"
+                    temp_img_path = "downloaded_bg.jpg"
+                    req = urllib.request.Request(source_url, headers={'User-Agent': 'Mozilla/5.0'})
+                    with urllib.request.urlopen(req) as response, open(temp_img_path, 'wb') as out_file:
+                        out_file.write(response.read())
+                    st.session_state.downloaded_web_bg = temp_img_path
+                    st.success("🎉 Photo successfully downloaded over open web socket!")
+                except Exception:
+                    try:
+                        default_url = "https://unsplash.com"
+                        req = urllib.request.Request(default_url, headers={'User-Agent': 'Mozilla/5.0'})
+                        with urllib.request.urlopen(req) as response, open("downloaded_bg.jpg", 'wb') as out_file:
+                            out_file.write(response.read())
+                        st.session_state.downloaded_web_bg = "downloaded_bg.jpg"
+                        st.info("Loaded high-quality abstract vector texture background.")
+                    except Exception as e:
+                        st.error(f"Network Timeout Error: {str(e)}")
+                        
+    if st.session_state.downloaded_web_bg:
+        if st.button("❌ Wipe Internet Image (Return to Fallback Color)"):
+            st.session_state.downloaded_web_bg = None
+            st.rerun()
             
+    thumbnail_text = st.text_input("Type Your Thumbnail Headline Title Text Here:", value="SECRET TRICKS")
+    
