@@ -14,10 +14,6 @@ st.sidebar.header("🎨 Styling Options")
 bg_color = st.sidebar.color_picker("Thumbnail Background Color", "#1E1E2E")
 text_color = st.sidebar.color_picker("Thumbnail Text Color", "#FFCC00")
 
-# Interactive Sliders for Custom Text Layouts
-font_size = st.sidebar.slider("Font Size", min_value=40, max_value=200, value=120, step=5)
-line_width = st.sidebar.slider("Characters Per Line (Wrap)", min_value=8, max_value=25, value=12, step=1)
-
 # --- AUTO-LOAD SECURE API KEY ---
 api_key = st.secrets.get("GEMINI_API_KEY", "")
 
@@ -30,8 +26,8 @@ else:
 topic = st.text_input("What is your YouTube Short about?", placeholder="e.g., 3 Hidden Features of iPhones No One Uses")
 hook_style = st.selectbox("Script Tone/Hook Style", ["Dramatic & Suspenseful", "Energetic & Fast-Paced", "Educational & Casual"])
 
-# --- CORE LOGIC: DYNAMIC TYPOGRAPHY THUMBNAIL GENERATION ---
-def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selected_wrap_width):
+# --- CORE LOGIC: MASSIVE TYPOGRAPHY THUMBNAIL GENERATION ---
+def generate_thumbnail(title_text, bg_hex, text_hex):
     # 1. Initialize Canvas (1280x720 standard landscape layout)
     img = Image.new("RGB", (1280, 720), color=bg_hex)
     draw = ImageDraw.Draw(img)
@@ -41,20 +37,21 @@ def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selecte
         fade_factor = int((y / 720) * 95) 
         draw.line([(0, y), (1280, y)], fill=(0, 0, 0, fade_factor))
         
-    # 3. Load Heavy High-Impact Fonts using the selected custom size
+    # 3. Load Heavy High-Impact Fonts at a Massive Size (130px)
+    font_size = 130
     try:
-        font = ImageFont.truetype("impact.ttf", selected_font_size)
+        font = ImageFont.truetype("impact.ttf", font_size)
     except IOError:
         try:
-            font = ImageFont.truetype("arialbd.ttf", selected_font_size)
+            font = ImageFont.truetype("arialbd.ttf", font_size)
         except IOError:
             font = ImageFont.load_default()
 
-    # Wrap the text using the slider value chosen by the user
-    wrapped_lines = textwrap.wrap(title_text.upper(), width=selected_wrap_width)
+    # Wrap the text tighter (width=12) so fewer big words fit per line
+    wrapped_lines = textwrap.wrap(title_text.upper(), width=12)
     
-    # 4. Balanced Center Calculation Geometry
-    line_height = selected_font_size + 15
+    # 4. Balanced Center Calculation Geometry for Large Fonts
+    line_height = font_size + 15
     total_text_height = len(wrapped_lines) * line_height
     y_offset = (720 - total_text_height) // 2 - 20
     
@@ -64,8 +61,8 @@ def generate_thumbnail(title_text, bg_hex, text_hex, selected_font_size, selecte
         text_width = right - left
         x_position = (1280 - text_width) // 2
         
-        # 5. Scaled Drop-Shadow proportional to the font size
-        shadow_offset = max(2, int(selected_font_size * 0.06))
+        # 5. Heavy 8-Pixel Drop-Shadow for Instant Text Legibility
+        shadow_offset = 8
         for sx in [-shadow_offset, shadow_offset]:
             for sy in [-shadow_offset, shadow_offset]:
                 draw.text((x_position + sx, y_offset + sy), line, fill="#000000", font=font)
@@ -112,8 +109,7 @@ if st.button("🚀 Generate Content Assets", type="primary"):
                 st.subheader("🖼️ Generated Video Thumbnail")
                 clean_title = topic[:40] + "..." if len(topic) > 40 else topic
                 
-                # Pass sliders variables down to engine
-                thumbnail_img = generate_thumbnail(clean_title, bg_color, text_color, font_size, line_width)
+                thumbnail_img = generate_thumbnail(clean_title, bg_color, text_color)
                 st.image(thumbnail_img, use_container_width=True)
                 
                 thumbnail_img.save("temp_thumb.png")
